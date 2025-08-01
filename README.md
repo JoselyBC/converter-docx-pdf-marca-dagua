@@ -20,7 +20,7 @@ A aplicação permite ao usuário:
 *   **Converter Arquivos em Lote:** Selecionar um ou múltiplos documentos `.docx` para serem convertidos de uma só vez.
 *   **Aplicar Marca d'Água:** Escolher uma imagem (como um logo) para ser aplicada como marca d'água em todas as páginas dos documentos gerados.
 *   **Ajustar Transparência:** Controlar o nível de transparência da marca d'água para um resultado mais sutil ou mais forte.
-*   **Adicionar Rodapé Padrão:** Insere automaticamente o texto "Escola da Nuvem — Todos os direitos reservados." no rodapé de cada página.
+*   **Personalizar o Rodapé:** Definir um texto personalizado para ser inserido no rodapé de cada página, ou deixá-lo em branco para não incluir rodapé.
 *   **Interface Simples:** Oferece uma janela intuitiva para que usuários sem conhecimento técnico possam realizar as conversões facilmente.
 
 ## 💻 Como Rodar a Aplicação
@@ -38,6 +38,7 @@ Para usar o programa, não é necessário instalar o Python ou qualquer uma das 
 3.  Dê um duplo-clique no arquivo `conversor_pdf.exe` para iniciar o programa.
 4.  Na janela da aplicação:
     *   Clique em "Selecionar..." para escolher a imagem da marca d'água.
+    *   **(Opcional)** Edite o texto no campo "Texto do Rodapé" para personalizar o rodapé.
     *   Clique em "Selecionar..." para escolher os arquivos `.docx` que deseja converter.
     *   Clique no botão verde **"Converter para PDF com Marca d'Água"**.
 5.  Aguarde o processo terminar. Os arquivos PDF convertidos serão salvos na mesma pasta onde os arquivos `.docx` originais estão localizados.

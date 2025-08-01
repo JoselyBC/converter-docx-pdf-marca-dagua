@@ -5,71 +5,44 @@ import fitz  # PyMuPDF
 import os
 import shutil
 import tempfile
-# from docx2pdf import convert  <-- REMOVIDO
-import comtypes.client       # <-- NOVA IMPORTAÇÃO
+import comtypes.client
 import traceback
 import gc
 import time
 import uuid
 
-# --- NOVA FUNÇÃO DE CONVERSÃO ---
+# --- Função de conversão DOCX para PDF (sem alterações) ---
 def converter_docx_para_pdf(caminho_docx, caminho_pdf):
-    """
-    Converte um único arquivo DOCX para PDF usando a biblioteca comtypes.
-    Esta função é mais robusta que a docx2pdf em alguns sistemas.
-    """
-    # Constante para o formato PDF no Word
     wdFormatPDF = 17
     word = None
     doc = None
-    
-    # Paths precisam ser absolutos para o COM
     caminho_docx_abs = os.path.abspath(caminho_docx)
     caminho_pdf_abs = os.path.abspath(caminho_pdf)
-
     try:
-        # Inicia o Word em segundo plano
         word = comtypes.client.CreateObject('Word.Application')
-        word.Visible = False # Não mostrar a janela do Word
-        
-        # Abre o documento
-        print(f"Abrindo documento: {caminho_docx_abs}")
+        word.Visible = False
         doc = word.Documents.Open(caminho_docx_abs)
-        
-        # Salva como PDF
-        print(f"Salvando como PDF em: {caminho_pdf_abs}")
         doc.SaveAs(caminho_pdf_abs, FileFormat=wdFormatPDF)
-        
     except Exception as e:
-        # Levanta a exceção para ser tratada no loop principal
         raise e
     finally:
-        # GARANTE que o Word seja fechado, mesmo se ocorrer um erro
-        if doc:
-            doc.Close()
-            print("Documento do Word fechado.")
-        if word:
-            word.Quit()
-            print("Aplicação Word encerrada.")
-        # Libera os objetos COM
+        if doc: doc.Close()
+        if word: word.Quit()
         doc = None
         word = None
         gc.collect()
 
 # --- Funções de seleção (sem alterações) ---
 def selecionar_logo():
-    global g_caminho_logo
     caminho = filedialog.askopenfilename(
         title="Selecione a Imagem da Marca d'Água",
         filetypes=[("Imagem PNG", "*.png"), ("Imagem JPEG", "*.jpg;*.jpeg"), ("Todos os arquivos", "*.*")]
     )
     if caminho:
-        g_caminho_logo = caminho
         entrada_logo.delete(0, tk.END)
-        entrada_logo.insert(0, g_caminho_logo)
+        entrada_logo.insert(0, caminho)
 
 def selecionar_docx():
-    global g_caminhos_docx_str
     caminhos_tupla = filedialog.askopenfilenames(
         title="Selecione os Arquivos DOCX",
         filetypes=[("Documento Word", "*.docx"), ("Todos os arquivos", "*.*")]
@@ -99,6 +72,8 @@ def converter_arquivos():
     caminho_logo_atual = entrada_logo.get()
     caminhos_docx_str_atual = entrada_docx.get()
     transparencia_str = entrada_transparencia.get()
+    # <<< NOVA LINHA PARA CAPTURAR O TEXTO DO RODAPÉ >>>
+    texto_rodape_personalizado = entrada_rodape.get()
 
     if not caminho_logo_atual or not caminhos_docx_str_atual:
         messagebox.showerror("Erro", "Por favor, selecione a imagem da marca d'água e pelo menos um arquivo DOCX."); return
@@ -131,7 +106,6 @@ def converter_arquivos():
             nome_pdf_interm = f"{os.path.splitext(nome_base_docx)[0]}_{uuid.uuid4().hex[:6]}.pdf"
             caminho_pdf_intermediario = os.path.join(pasta_temp_docx2pdf, nome_pdf_interm)
             
-            # <<< MUDANÇA PRINCIPAL AQUI >>>
             converter_docx_para_pdf(caminho_docx_original, caminho_pdf_intermediario)
             
             if not os.path.exists(caminho_pdf_intermediario):
@@ -158,9 +132,11 @@ def converter_arquivos():
                     img_logo_redim.save(caminho_logo_pagina_temp)
                     rect_logo = fitz.Rect(0, 0, largura_pagina, altura_pagina)
                     page_obj.insert_image(rect_logo, filename=caminho_logo_pagina_temp, overlay=True)
-                    texto_rodape = "Escola da Nuvem — Todos os direitos reservados."
-                    ponto_rodape = fitz.Point(50, altura_pagina - 30) 
-                    page_obj.insert_text(ponto_rodape, texto_rodape, fontsize=8, fontname="helv", color=(0.33, 0.33, 0.33))
+                    
+                    # <<< MUDANÇA: USA O TEXTO PERSONALIZADO SE ELE EXISTIR >>>
+                    if texto_rodape_personalizado:
+                        ponto_rodape = fitz.Point(50, altura_pagina - 30) 
+                        page_obj.insert_text(ponto_rodape, texto_rodape_personalizado, fontsize=8, fontname="helv", color=(0.33, 0.33, 0.33))
 
             pasta_saida_pdf = os.path.dirname(caminho_docx_original)
             nome_pdf_final_base = os.path.splitext(nome_base_docx)[0] + '.pdf'
@@ -171,22 +147,20 @@ def converter_arquivos():
 
         except Exception as e:
             error_message = str(e)
-            print(f"ERRO no processamento de {caminho_docx_original}: {error_message}")
-            print(traceback.format_exc())
             erros_ocorridos.append(f"{os.path.basename(caminho_docx_original)}: {error_message}")
         
         finally:
-            if doc_pdf_pymupdf: doc_pdf_pymupdf.close(); doc_pdf_pymupdf = None
+            if doc_pdf_pymupdf: doc_pdf_pymupdf.close()
             gc.collect()
             time.sleep(0.5) 
             if caminho_pdf_intermediario and os.path.exists(caminho_pdf_intermediario):
-                tentar_remover_arquivo(caminho_pdf_intermediario, tentativas=5, delay=0.7)
+                tentar_remover_arquivo(caminho_pdf_intermediario)
             progresso_bar['value'] = i + 1
             janela.update_idletasks()
 
     try:
         if os.path.exists(pasta_temp_docx2pdf): shutil.rmtree(pasta_temp_docx2pdf)
-    except Exception as e:
+    except Exception:
         messagebox.showwarning("Aviso de Limpeza", f"Não foi possível remover todos os arquivos temporários em:\n{pasta_temp_docx2pdf}\n\nPode ser necessário removê-los manualmente.")
 
     if arquivos_convertidos_sucesso == total_arquivos:
@@ -196,32 +170,51 @@ def converter_arquivos():
         if erros_ocorridos: msg_erro_final += "Erros:\n" + "\n".join(erros_ocorridos)
         messagebox.showwarning("Concluído com Erros", msg_erro_final)
 
-# --- Interface Gráfica (Tkinter) - Sem alterações ---
+# --- Interface Gráfica (Tkinter) - Modificada ---
 janela = tk.Tk()
 janela.title("Conversor DOCX para PDF com Marca d'Água Personalizada")
-janela.geometry("600x450")
+janela.geometry("650x500") # Aumentei um pouco a janela
+
+# Frame da Imagem
 frame_logo = tk.Frame(janela)
-frame_logo.pack(pady=5, fill=tk.X, padx=10)
+frame_logo.pack(pady=10, fill=tk.X, padx=10)
 tk.Label(frame_logo, text="Imagem da Marca d'Água:").pack(side=tk.LEFT)
-entrada_logo = tk.Entry(frame_logo, width=50)
+entrada_logo = tk.Entry(frame_logo)
 entrada_logo.pack(side=tk.LEFT, expand=True, fill=tk.X, padx=(5,0))
 tk.Button(frame_logo, text="Selecionar...", command=selecionar_logo).pack(side=tk.LEFT, padx=(5,0))
+
+# Frame da Transparência
 frame_transp = tk.Frame(janela)
-frame_transp.pack(pady=5, fill=tk.X, padx=10)
-tk.Label(frame_transp, text="Transparência (0-255, 0=totalmente transparente):").pack(side=tk.LEFT)
+frame_transp.pack(pady=10, fill=tk.X, padx=10)
+tk.Label(frame_transp, text="Transparência (0-255, 0=invisível):").pack(side=tk.LEFT)
 entrada_transparencia = tk.Entry(frame_transp, width=10)
 entrada_transparencia.insert(0, "15")
 entrada_transparencia.pack(side=tk.LEFT, padx=(5,0))
+
+# <<< NOVO FRAME PARA O RODAPÉ >>>
+frame_rodape = tk.Frame(janela)
+frame_rodape.pack(pady=10, fill=tk.X, padx=10)
+tk.Label(frame_rodape, text="Texto do Rodapé (deixe em branco para nenhum):").pack(side=tk.LEFT)
+entrada_rodape = tk.Entry(frame_rodape)
+entrada_rodape.insert(0, "Seu nome · Todos os direitos reservados.")
+entrada_rodape.pack(side=tk.LEFT, expand=True, fill=tk.X, padx=(5,0))
+
+# Frame dos Arquivos DOCX
 frame_docx = tk.Frame(janela)
-frame_docx.pack(pady=5, fill=tk.X, padx=10)
+frame_docx.pack(pady=10, fill=tk.X, padx=10)
 tk.Label(frame_docx, text="Arquivos DOCX (selecione um ou mais):").pack(side=tk.LEFT)
-entrada_docx = tk.Entry(frame_docx, width=50)
+entrada_docx = tk.Entry(frame_docx)
 entrada_docx.pack(side=tk.LEFT, expand=True, fill=tk.X, padx=(5,0))
 tk.Button(frame_docx, text="Selecionar...", command=selecionar_docx).pack(side=tk.LEFT, padx=(5,0))
-btn_converter = tk.Button(janela,text="Converter para PDF com Marca d'Água",command=converter_arquivos,bg="green",fg="white",font=("Arial", 10, "bold"))
-btn_converter.pack(pady=20, ipady=5)
+
+# Botão de Converter
+btn_converter = tk.Button(janela,text="Converter para PDF com Marca d'Água",command=converter_arquivos,bg="green",fg="white",font=("Arial", 12, "bold"))
+btn_converter.pack(pady=20, ipady=10, padx=10, fill=tk.X)
+
+# Barra de Progresso
 progresso_label = tk.Label(janela, text="Progresso:")
 progresso_label.pack()
 progresso_bar = ttk.Progressbar(janela, orient='horizontal', length=400, mode='determinate')
-progresso_bar.pack(pady=10, padx=10, fill=tk.X)
+progresso_bar.pack(pady=10, padx=10, fill=tk.X, side=tk.BOTTOM)
+
 janela.mainloop()
