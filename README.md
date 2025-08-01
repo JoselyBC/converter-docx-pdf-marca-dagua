@@ -2,7 +2,7 @@
 
 Este é um aplicativo de desktop desenvolvido para facilitar a conversão de documentos do Word (`.docx`) para o formato PDF, adicionando automaticamente uma marca d'água personalizada e um rodapé em todas as páginas.
 
- 
+
 *(Sugestão: Substitua o link acima pelo link de uma imagem do seu projeto no GitHub para que ela apareça aqui)*
 
 ## 🚀 Tecnologias Usadas
@@ -13,7 +13,7 @@ Este projeto foi construído utilizando as seguintes tecnologias e bibliotecas:
 *   **Tkinter:** Para a construção da interface gráfica do usuário (GUI).
 *   **Pillow (PIL):** Para o processamento e ajuste de transparência da imagem da marca d'água.
 *   **PyMuPDF (fitz):** Para a manipulação do arquivo PDF, inserindo a marca d'água e o texto de rodapé.
-*   **docx2pdf:** Para realizar a conversão inicial do arquivo `.docx` para `.pdf`.
+*   **comtypes:** Para a comunicação direta e robusta com o Microsoft Word, realizando a conversão do DOCX para PDF.
 *   **PyInstaller:** Para empacotar a aplicação em um único arquivo executável (`.exe`) para fácil distribuição no Windows.
 
 ## 📋 O que o projeto faz
