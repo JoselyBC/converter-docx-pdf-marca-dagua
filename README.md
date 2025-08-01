@@ -2,9 +2,6 @@
 
 Este é um aplicativo de desktop desenvolvido para facilitar a conversão de documentos do Word (`.docx`) para o formato PDF, adicionando automaticamente uma marca d'água personalizada e um rodapé em todas as páginas.
 
-
-*(Sugestão: Substitua o link acima pelo link de uma imagem do seu projeto no GitHub para que ela apareça aqui)*
-
 ## 🚀 Tecnologias Usadas
 
 Este projeto foi construído utilizando as seguintes tecnologias e bibliotecas:
